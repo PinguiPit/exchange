@@ -1,0 +1,76 @@
+%header
+  .p-5.text-center{style:"background-color: black;"}
+    = image_tag "icons/exchange.png", width: "70%;",height: "400px";
+    %h1.mb-3{style: "color: gold;"} Change dollar to cryptocurrency
+    .mx-auto.mt-5.col-12
+      = form_with(url: calculate_path, local: false, method: 'post', remote: true) do | f|
+        .form-group.text-center
+          = f.file_field :upload_from_csv, accept: 'text/csv', multiple: false, required: true, class: "form-control"
+          - @data["data"].each_with_index do |shareholder, index|
+            -if shareholder["slug"].titleize == "Bitcoin"
+              = f.hidden_field :btc, value: shareholder["metrics"]["market_data"]["price_usd"]
+            -elsif shareholder["slug"].titleize == 'Ethereum'
+              = f.hidden_field :eth, value: shareholder["metrics"]["market_data"]["price_usd"]
+            -elsif shareholder["slug"].titleize == "Cardano" 
+              = f.hidden_field :car, value: shareholder["metrics"]["market_data"]["price_usd"]
+          = f.submit 'CALCULATE', class: 'btn btn-success btn-block text-center col-12'
+  %br  
+  .card-group
+    .card.text-center
+      = image_tag "icons/Bitcoin-BTC-icon.png", size: "100", class: "mx-auto d-block"
+      .card-body
+        %h5.card-title Annual profit
+        %p.card-text USD
+        %p.card-text#usdBtc $0.00 
+        %p.card-text BTC
+        %p.card-text#btcUsd $0.00 
+    .card.text-center
+      = image_tag "icons/Ethereum-ETH-icon.png", size: "100", class: "mx-auto d-block"
+      .card-body
+        %h5.card-title Annual profit
+        %p.card-text USD
+        %p.card-text#usdEth $0.00 
+        %p.card-text ETH
+        %p.card-text#ethUsd $0.00 
+    .card.text-center
+      = image_tag "icons/Cardano-ADA-icon.png", size: "100", class: "mx-auto d-block"
+      .card-body
+        %h5.card-title Annual profit
+        %p.card-text USD
+        %p.card-text#usdAda $0.00
+        %p.card-text ADA
+        %p.card-text#adaUsd $0.00 
+  %br                
+  .table-responsive
+    %table.table.table-dark.table-bordered.table-sm#exchangeTable
+      %thead
+        %tr
+          %th.small.text-center{:scope => "col"} #
+          %th.small.text-center{:scope => "col"} ASSET
+          %th.small.text-center{:scope => "col"} PRICE(USD)
+          %th.small.text-center{:scope => "col"} CHANGE VS USD (1H)
+          %th.small.text-center{:scope => "col"} CHANGE VS USD (24H)
+          %th.small.text-center{:scope => "col"} REPORTED MARKETCAP
+          %th.small.text-center{:scope => "col"} REAL VOLUME (24H)
+          %th.small.text-center{:scope => "col"} CHANGE VS USD (7D)
+          %th.small.text-center{:scope => "col"} CHANGE VS USD (30D)
+          %th.small.text-center{:scope => "col"} CHANGE VS USD (YTD)
+      %tbody
+      - @data["data"].each_with_index do |shareholder, index|
+        -if shareholder["slug"].titleize == "Bitcoin" || shareholder["slug"].titleize == 'Ethereum' || shareholder["slug"].titleize == "Cardano" 
+          %tr
+            -if shareholder["slug"].titleize == "Cardano"
+              %td.small.text-center 3
+            -else
+              %td.small.text-center= index+1
+            %td.small.text-center= shareholder["slug"].titleize + "-" +shareholder["symbol"]
+            %td.small.text-center{id: "#{shareholder["symbol"]}"}= number_to_currency(shareholder["metrics"]["market_data"]["price_usd"], precision: 2, separator: ".", unit: "$", delimiter: ",", format: "%u%n")        
+            %td.small.text-center{style: "#{"color: red" if shareholder["metrics"]["market_data"]["percent_change_usd_last_1_hour"].round(2) < 0} #{"color: green" if shareholder["metrics"]["market_data"]["percent_change_usd_last_1_hour"].round(2) > 0} " }= "#{"+" if shareholder["metrics"]["market_data"]["percent_change_usd_last_1_hour"].round(2) > 0}"+number_to_percentage(shareholder["metrics"]["market_data"]["percent_change_usd_last_1_hour"], precision: 2)
+            %td.small.text-center{style: "#{"color: red" if shareholder["metrics"]["market_data"]["percent_change_usd_last_24_hours"].round(2) < 0} #{"color: green" if shareholder["metrics"]["market_data"]["percent_change_usd_last_24_hours"].round(2) > 0} " }= "#{"+" if shareholder["metrics"]["market_data"]["percent_change_usd_last_24_hours"].round(2) > 0}"+number_to_percentage(shareholder["metrics"]["market_data"]["percent_change_usd_last_24_hours"], precision: 2)
+            %td.small.text-center= "$"+number_to_human(shareholder["metrics"]["marketcap"]["current_marketcap_usd"].round(2), precision: 2, separator: '.', significant: false)
+            %td.small.text-center= "$"+number_to_human(shareholder["metrics"]["market_data"]["real_volume_last_24_hours"], precision: 2, separator: ".")     
+            %td.small.text-center{style: " #{"color: red" if shareholder["metrics"]["roi_data"]["percent_change_last_1_week"].round(2) < 0} #{"color: green" if shareholder["metrics"]["roi_data"]["percent_change_last_1_week"].round(2) > 0} " }= "#{"+" if shareholder["metrics"]["roi_data"]["percent_change_last_1_week"].round(2) > 0}"+number_to_percentage(shareholder["metrics"]["roi_data"]["percent_change_last_1_week"], precision: 2)      
+            %td.small.text-center{style: " #{"color: red" if shareholder["metrics"]["roi_data"]["percent_change_last_1_month"].round(2) < 0} #{"color: green" if shareholder["metrics"]["roi_data"]["percent_change_last_1_month"].round(2) > 0} " }= "#{"+" if shareholder["metrics"]["roi_data"]["percent_change_last_1_month"].round(2) > 0}"+number_to_percentage(shareholder["metrics"]["roi_data"]["percent_change_last_1_month"], precision: 2)    
+            %td.small.text-center{style: " #{"color: red" if shareholder["metrics"]["roi_data"]["percent_change_year_to_date"].round(2) < 0} #{"color: green" if shareholder["metrics"]["roi_data"]["percent_change_year_to_date"].round(2) > 0} " }= "#{"+" if shareholder["metrics"]["roi_data"]["percent_change_year_to_date"].round(2) > 0}"+number_to_percentage(shareholder["metrics"]["roi_data"]["percent_change_year_to_date"], precision: 2)  
+
+%button#download.btn.btn-outline-light{:type => "button"} Download table to CSV
